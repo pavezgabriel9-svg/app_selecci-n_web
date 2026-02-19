@@ -56,6 +56,8 @@ export default async function TestShellPage({ params }: Props) {
       token={token}
       testId={currentTest.id}
       testName={currentTest.name}
+      testPath={currentTest.path}
+      hasPractice={currentTest.has_practice}
       currentIndex={completedCount}
       totalTests={snapshot.length}
       candidateName={candidate?.nombre ?? undefined}
