@@ -114,7 +114,7 @@
 
 /* ================================================================
    Paleta de la vista del candidato (evaluación)
-   Más limpia y tranquilizadora — fondo blanco puro
+   Más limpia — fondo blanco puro
    ================================================================ */
 [data-theme="evaluation"] {
   --background: oklch(0.99 0 0);

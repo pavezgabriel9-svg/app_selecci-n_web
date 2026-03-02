@@ -22,6 +22,7 @@ interface Props {
 
 interface HanoiTestProps extends TestComponentProps {
   variant: 'medio' | 'dificil'
+  candidateName?: string
 }
 
 // ─── Dynamic imports — bundle-dynamic-imports: solo carga el test activo ──────
@@ -55,6 +56,7 @@ function resolveTestComponent(
   hasPractice: boolean,
   baseProps: Omit<TestComponentProps, 'hasPractice'>,
   testName: string,
+  candidateName?: string,
 ): React.ReactNode {
   const path = testPath.toLowerCase()
   const fullProps: TestComponentProps = { ...baseProps, hasPractice }
@@ -62,9 +64,9 @@ function resolveTestComponent(
   if (path.includes('stroop'))        return <StroopTest  {...fullProps} />
   if (path.includes('luscher'))       return <LuscherTest {...fullProps} />
   if (path.includes('memoria'))       return <MemoriaTest {...fullProps} />
+  if (path.includes('hanoi-dificil')) return <HanoiTest   {...fullProps} variant="dificil" candidateName={candidateName} />
+  if (path.includes('hanoi'))         return <HanoiTest   {...fullProps} variant="medio"   candidateName={candidateName} />
   if (path.includes('ic'))            return <ICTest      {...fullProps} />
-  if (path.includes('hanoi-dificil')) return <HanoiTest   {...fullProps} variant="dificil" />
-  if (path.includes('hanoi'))         return <HanoiTest   {...fullProps} variant="medio" />
 
   // Fallback
   return (
@@ -119,7 +121,7 @@ export function TestRunner({
         className="rounded-2xl border p-8"
         style={{ background: 'white', borderColor: 'oklch(0.92 0.005 80)' }}
       >
-        {resolveTestComponent(testPath, hasPractice, { onComplete: completeTest, isPending }, testName)}
+        {resolveTestComponent(testPath, hasPractice, { onComplete: completeTest, isPending }, testName, candidateName)}
       </div>
     </div>
   )

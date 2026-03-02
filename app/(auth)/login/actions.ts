@@ -12,6 +12,7 @@ export async function loginAction(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword({ email, password })
 
   if (error) {
+    console.error('[LOGIN ERROR]', error.status, error.code, error.message)
     redirect('/login?error=Credenciales incorrectas. Intenta nuevamente.')
   }
 
