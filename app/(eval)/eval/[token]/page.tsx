@@ -27,31 +27,11 @@ export default async function EvalIntakePage({ params }: Props) {
     )
   }
 
-  if (session.status === 'completed') {
-    return (
-      <EvalMessage
-        icon="✓"
-        title="Evaluación completada"
-        message="Ya completaste esta evaluación. Gracias por tu participación."
-        variant="success"
-      />
-    )
+  if (session.status === 'completed' || session.status === 'in_progress') {
+    redirect(`/eval/${token}/hub`)
   }
 
   const snapshot = session.tests_snapshot as TestSnapshot[]
-
-  if (session.status === 'in_progress') {
-    const { count } = await supabase
-      .from('test_results')
-      .select('id', { count: 'exact', head: true })
-      .eq('session_id', session.id)
-
-    const idx = count ?? 0
-    if (idx >= snapshot.length) {
-      redirect(`/eval/${token}/gracias`)
-    }
-    redirect(`/eval/${token}/${snapshot[idx].id}`)
-  }
 
   return <IntakeForm token={token} totalTests={snapshot.length} />
 }

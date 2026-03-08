@@ -3,32 +3,27 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import {
-  LayoutDashboard,
-  FlaskConical,
-  BarChart3,
-} from 'lucide-react'
+import { LayoutDashboard, FlaskConical, BarChart3, Users } from 'lucide-react'
 
-const navItems = [
-  {
-    href: '/dashboard',
-    label: 'Dashboard',
-    icon: LayoutDashboard,
-  },
-  {
-    href: '/baterias',
-    label: 'Baterías',
-    icon: FlaskConical,
-  },
-  {
-    href: '/resultados',
-    label: 'Resultados',
-    icon: BarChart3,
-  },
+const baseNavItems = [
+  { href: '/dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
+  { href: '/baterias',   label: 'Baterías',   icon: FlaskConical },
+  { href: '/resultados', label: 'Resultados', icon: BarChart3 },
 ]
 
-export default function AdminSidebar() {
+const superAdminNavItems = [
+  { href: '/usuarios', label: 'Usuarios', icon: Users },
+]
+
+interface Props {
+  isSuperAdmin: boolean
+}
+
+export default function AdminSidebar({ isSuperAdmin }: Props) {
   const pathname = usePathname()
+  const navItems = isSuperAdmin
+    ? [...baseNavItems, ...superAdminNavItems]
+    : baseNavItems
 
   return (
     <aside
@@ -75,16 +70,11 @@ export default function AdminSidebar() {
               href={href}
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-all duration-150',
-                isActive
-                  ? 'font-medium'
-                  : 'opacity-50 hover:opacity-80'
+                isActive ? 'font-medium' : 'opacity-50 hover:opacity-80'
               )}
               style={
                 isActive
-                  ? {
-                      background: 'oklch(0.26 0.07 265)',
-                      color: 'oklch(0.95 0.005 85)',
-                    }
+                  ? { background: 'oklch(0.26 0.07 265)', color: 'oklch(0.95 0.005 85)' }
                   : { color: 'oklch(0.90 0.01 85)' }
               }
             >
@@ -106,6 +96,14 @@ export default function AdminSidebar() {
 
       {/* Footer sidebar */}
       <div className="p-6">
+        {isSuperAdmin && (
+          <div
+            className="mb-3 px-3 py-2 rounded-md text-[10px] font-semibold tracking-wider uppercase"
+            style={{ background: 'oklch(0.72 0.12 68 / 0.08)', color: 'var(--gold)' }}
+          >
+            Acceso completo
+          </div>
+        )}
         <div
           className="px-3 py-2 rounded-md text-xs opacity-30"
           style={{ color: 'oklch(0.90 0.01 85)' }}

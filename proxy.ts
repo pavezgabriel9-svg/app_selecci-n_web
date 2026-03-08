@@ -2,6 +2,8 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function proxy(request: NextRequest) {
+  // Patrón oficial @supabase/ssr: supabaseResponse debe crearse aquí
+  // y ser el único response retornado para que las cookies se propaguen.
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -13,7 +15,9 @@ export async function proxy(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          )
           supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
@@ -23,30 +27,36 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  // Refrescar sesión antes de verificar auth
-  const { data: { user } } = await supabase.auth.getUser()
+  // IMPORTANTE: no escribir lógica entre createServerClient y getUser()
+  // para evitar que las sesiones se invaliden inesperadamente.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
 
-  // Rutas protegidas: /dashboard y /baterias y /resultados
-  const isAdminRoute = pathname.startsWith('/dashboard') ||
-    pathname.startsWith('/baterias') ||
-    pathname.startsWith('/resultados')
-
-  // Rutas de auth
-  const isAuthRoute = pathname.startsWith('/login')
-
-  if (isAdminRoute && !user) {
-    const loginUrl = request.nextUrl.clone()
-    loginUrl.pathname = '/login'
-    loginUrl.searchParams.set('redirect', pathname)
-    return NextResponse.redirect(loginUrl)
+  // Redirigir usuarios ya autenticados fuera del login
+  if (pathname === '/login' && user) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  if (isAuthRoute && user) {
-    const dashboardUrl = request.nextUrl.clone()
-    dashboardUrl.pathname = '/dashboard'
-    return NextResponse.redirect(dashboardUrl)
+  // Rutas protegidas — requieren sesión activa
+  const isProtectedRoute =
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/baterias') ||
+    pathname.startsWith('/resultados') ||
+    pathname.startsWith('/usuarios')
+
+  if (isProtectedRoute && !user) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  // /usuarios requiere rol super_admin
+  if (pathname.startsWith('/usuarios')) {
+    const role = user?.app_metadata?.role
+    if (role !== 'super_admin') {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
   }
 
   return supabaseResponse
@@ -54,6 +64,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|api|eval).*)',
+    // Excluir archivos estáticos, imágenes y rutas públicas
+    '/((?!_next/static|_next/image|favicon.ico|eval|gracias|reset-pass).*)',
   ],
 }
