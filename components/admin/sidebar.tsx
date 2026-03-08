@@ -16,12 +16,14 @@ const superAdminNavItems = [
 ]
 
 interface Props {
-  isSuperAdmin: boolean
+  role: 'user' | 'admin' | 'super_admin'
 }
 
-export default function AdminSidebar({ isSuperAdmin }: Props) {
+export default function AdminSidebar({ role }: Props) {
   const pathname = usePathname()
-  const navItems = isSuperAdmin
+  const isAdminOrAbove = role === 'admin' || role === 'super_admin'
+  const isSuperAdmin = role === 'super_admin'
+  const navItems = isAdminOrAbove
     ? [...baseNavItems, ...superAdminNavItems]
     : baseNavItems
 

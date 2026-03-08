@@ -216,32 +216,15 @@ export default function StroopTest({ onComplete, isPending, hasPractice }: TestC
 
   // ── Resultado ──────────────────────────────────────────────────────────────
   if (fase === 'resultado') {
-    const r = resultsRef.current
-    const precision = r && r.total > 0 ? Math.round((r.score / r.total) * 100) : 0
-    let performance: string
-    if (precision > 85 && (r?.total ?? 0) >= 15) performance = 'Alto rendimiento'
-    else if (precision >= 70 && (r?.total ?? 0) >= 10) performance = 'Rendimiento moderado'
-    else performance = 'Bajo rendimiento'
-
     return (
       <div className="space-y-8">
         <div className="space-y-4">
           <h2 className="text-2xl font-light" style={{ color: 'var(--navy)', fontFamily: 'var(--font-fraunces, serif)' }}>
-            Prueba completada
+            ¡Bien hecho!
           </h2>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { label: 'Aciertos',  value: r?.score  ?? 0 },
-              { label: 'Errores',   value: r?.errors  ?? 0 },
-              { label: 'Total',     value: r?.total   ?? 0 },
-            ].map(({ label, value }) => (
-              <div key={label} className="text-center py-5 rounded-xl" style={{ background: 'oklch(0.96 0.005 80)' }}>
-                <div className="text-2xl font-light" style={{ color: 'var(--navy)' }}>{value}</div>
-                <div className="text-xs text-muted-foreground mt-1">{label}</div>
-              </div>
-            ))}
-          </div>
-          <p className="text-sm text-muted-foreground">{performance}</p>
+          <p className="text-sm text-muted-foreground">
+            Has completado esta etapa de la evaluación.
+          </p>
         </div>
         <button onClick={handleComplete} disabled={isPending}
           className="inline-flex items-center gap-2 px-8 py-3 rounded-lg text-sm font-medium disabled:opacity-60"

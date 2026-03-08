@@ -103,12 +103,11 @@ export async function createEvaluationAction(
   } = await supabase.auth.getUser()
   if (!user) return { error: 'No autenticado' }
 
-  // Verify battery ownership
+  // Verificar que la batería existe y el usuario tiene acceso (RLS la filtra)
   const { data: battery } = await supabase
     .from('batteries')
     .select('id')
     .eq('id', batteryId)
-    .eq('admin_id', user.id)
     .single()
 
   if (!battery) return { error: 'Batería no encontrada' }

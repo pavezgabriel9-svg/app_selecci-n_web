@@ -1,10 +1,11 @@
 import { Metadata } from 'next'
-import { createServiceClient } from '@/lib/supabase/server'
-import { getUserRole, getRoleLabel, isUserBanned } from '@/lib/auth/roles'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { getUserRole, getRoleLabel, isUserBanned, canBanTarget, type UserRole } from '@/lib/auth/roles'
 import { CreateAdminForm } from './create-admin-form'
 import { ToggleBanButton } from './toggle-ban-button'
 import { Users, ShieldCheck, Clock } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
+import { redirect } from 'next/navigation'
 
 export const metadata: Metadata = { title: 'Usuarios' }
 
@@ -34,16 +35,17 @@ function formatLastSeen(iso: string | null | undefined) {
 function RoleBadge({ user }: { user: User }) {
   const role = getUserRole(user)
   const label = getRoleLabel(role)
-  const isSuperAdmin = role === 'super_admin'
+
+  const styles: Record<UserRole, React.CSSProperties> = {
+    super_admin: { background: 'oklch(0.72 0.12 68 / 0.15)', color: 'var(--gold)' },
+    admin:       { background: 'oklch(0.20 0.06 268 / 0.10)', color: 'var(--navy)' },
+    user:        { background: 'oklch(0.60 0.04 268 / 0.08)', color: 'oklch(0.45 0.05 268)' },
+  }
 
   return (
     <span
       className="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-sm"
-      style={
-        isSuperAdmin
-          ? { background: 'oklch(0.72 0.12 68 / 0.15)', color: 'var(--gold)' }
-          : { background: 'oklch(0.20 0.06 268 / 0.07)', color: 'var(--navy)' }
-      }
+      style={styles[role]}
     >
       {label}
     </span>
@@ -67,6 +69,13 @@ function StatusDot({ banned }: { banned: boolean }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function UsuariosPage() {
+  // Obtener el rol del actor para controlar visibilidad de acciones
+  const supabase = await createClient()
+  const { data: { user: actor } } = await supabase.auth.getUser()
+  if (!actor) redirect('/login')
+
+  const actorRole = getUserRole(actor)
+
   const service = createServiceClient()
   const { data } = await service.auth.admin.listUsers({ perPage: 200 })
   const users = data.users.sort(
@@ -117,7 +126,7 @@ export default async function UsuariosPage() {
         <div className="lg:col-span-2">
           <div className="bg-white border border-border/50 rounded-xl overflow-hidden">
             <div className="px-5 py-4 border-b border-border/30">
-              <h2 className="text-sm font-semibold text-navy">Administradores</h2>
+              <h2 className="text-sm font-semibold text-navy">Todos los usuarios</h2>
             </div>
             {users.length === 0 ? (
               <div className="py-12 text-center">
@@ -127,7 +136,8 @@ export default async function UsuariosPage() {
               <div className="divide-y divide-border/30">
                 {users.map((user) => {
                   const banned = isUserBanned(user)
-                  const role = getUserRole(user)
+                  const targetRole = getUserRole(user)
+                  const showBanButton = canBanTarget(actorRole, targetRole)
 
                   return (
                     <div
@@ -161,7 +171,7 @@ export default async function UsuariosPage() {
                       </div>
 
                       {/* Action */}
-                      {role !== 'super_admin' && (
+                      {showBanButton && (
                         <ToggleBanButton
                           userId={user.id}
                           isBanned={banned}
@@ -179,13 +189,13 @@ export default async function UsuariosPage() {
         <div className="lg:col-span-1">
           <div className="bg-white border border-border/50 rounded-xl overflow-hidden">
             <div className="px-5 py-4 border-b border-border/30">
-              <h2 className="text-sm font-semibold text-navy">Nuevo admin</h2>
+              <h2 className="text-sm font-semibold text-navy">Nuevo usuario</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
                 El usuario podrá ingresar de inmediato.
               </p>
             </div>
             <div className="p-5">
-              <CreateAdminForm />
+              <CreateAdminForm actorRole={actorRole} />
             </div>
           </div>
         </div>

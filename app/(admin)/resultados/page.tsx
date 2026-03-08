@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { ResultadosTable } from '@/components/admin/resultados-table'
-import { isSuperAdmin } from '@/lib/auth/roles'
+import { isAdminOrAbove } from '@/lib/auth/roles'
 
 export const metadata: Metadata = { title: 'Resultados' }
 
@@ -64,10 +64,10 @@ export default async function ResultadosPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const superAdmin = isSuperAdmin(user)
+  const superAdmin = isAdminOrAbove(user)
   const sessions = await getResultados(user.id, superAdmin)
 
-  // Mapa de atribución: solo para super_admin (requiere service role)
+  // Mapa de atribución: para admin y superior (requiere service role)
   let adminEmails: Record<string, string> = {}
   if (superAdmin && sessions.length > 0) {
     const uniqueAdminIds = [...new Set(sessions.map((s) => s.admin_id))]
