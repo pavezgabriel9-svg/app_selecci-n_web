@@ -3,8 +3,10 @@
 import dynamic from 'next/dynamic'
 import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { completeTestAction } from '../../actions'
-import type { TestResultData, TestComponentProps } from '@/types/database'
+import type { TestResultData, TestComponentProps, TestSnapshot } from '@/types/database'
+import { cn } from '@/lib/utils'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -15,9 +17,10 @@ interface Props {
   testName: string
   testPath: string
   hasPractice: boolean
-  currentIndex: number
+  completedTestIds: string[]
   totalTests: number
   candidateName?: string
+  testsSnapshot: TestSnapshot[]
 }
 
 interface HanoiTestProps extends TestComponentProps {
@@ -87,33 +90,144 @@ function resolveTestComponent(
   )
 }
 
+// ─── TestProgressPanel ────────────────────────────────────────────────────────
+
+function TestProgressPanel({
+  tests,
+  completedTestIds,
+  activeTestId,
+}: {
+  tests: TestSnapshot[]
+  completedTestIds: string[]
+  activeTestId: string
+}) {
+  if (!tests.length) return null
+  const completedSet = new Set(completedTestIds)
+
+  return (
+    <nav aria-label="Progreso de evaluación">
+      <ol className="flex items-start w-full">
+        {tests.map((test, idx) => {
+          const isCompleted = completedSet.has(test.id)
+          const isActive = test.id === activeTestId
+          const isLast = idx === tests.length - 1
+
+          return (
+            <li key={test.id} className={cn('flex items-start', !isLast && 'flex-1')}>
+              <div className="flex flex-col items-center gap-1.5 shrink-0">
+                {/* Step circle */}
+                <div
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-500"
+                  style={{
+                    background: isCompleted
+                      ? 'oklch(0.93 0.05 145)'
+                      : isActive
+                      ? 'var(--navy)'
+                      : 'oklch(0.93 0.004 80)',
+                    color: isCompleted
+                      ? 'oklch(0.42 0.13 145)'
+                      : isActive
+                      ? 'var(--cream)'
+                      : 'oklch(0.68 0.004 80)',
+                    boxShadow: isActive
+                      ? '0 0 0 2px white, 0 0 0 3.5px var(--gold)'
+                      : 'none',
+                  }}
+                >
+                  {isCompleted ? (
+                    <svg
+                      className="w-3 h-3"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={3}
+                      aria-hidden="true"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                  ) : (
+                    idx + 1
+                  )}
+                </div>
+                {/* Test name */}
+                <span
+                  className="text-[9px] leading-tight text-center max-w-[56px] truncate"
+                  style={{
+                    color: isCompleted
+                      ? 'oklch(0.72 0.004 80)'
+                      : isActive
+                      ? 'var(--navy)'
+                      : 'oklch(0.75 0.004 80)',
+                    fontWeight: isActive ? 600 : 400,
+                  }}
+                  title={test.name}
+                >
+                  {test.name}
+                </span>
+              </div>
+
+              {/* Connector line — gray always, since order is free */}
+              {!isLast && (
+                <div
+                  className="flex-1 h-px mx-1.5"
+                  style={{ marginTop: '12px', background: 'oklch(0.90 0.004 80)' }}
+                />
+              )}
+            </li>
+          )
+        })}
+      </ol>
+    </nav>
+  )
+}
+
 // ─── TestRunner (orchestrator) ────────────────────────────────────────────────
 
 export function TestRunner({
   sessionId, token, testId, testName, testPath,
-  hasPractice, currentIndex, totalTests, candidateName,
+  hasPractice, completedTestIds, totalTests, candidateName, testsSnapshot,
 }: Props) {
   const { completeTest, isPending } = useTestNavigation(sessionId, testId, token)
-  const progressPct = Math.round((currentIndex / totalTests) * 100)
+  const completedCount = completedTestIds.length
 
   return (
     <div className="space-y-6">
-      {/* Progress bar */}
-      <div className="space-y-2">
+      {/* Breadcrumb */}
+      <Link
+        href={`/eval/${token}/hub`}
+        className="inline-flex items-center gap-1.5 transition-colors duration-200"
+        style={{ color: 'oklch(0.62 0.005 80)' }}
+        onMouseEnter={e => (e.currentTarget.style.color = 'var(--navy)')}
+        onMouseLeave={e => (e.currentTarget.style.color = 'oklch(0.62 0.005 80)')}
+      >
+        <svg
+          className="w-3 h-3"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+          aria-hidden="true"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+        </svg>
+        <span className="text-[11px]">Menú de evaluaciones</span>
+      </Link>
+
+      {/* Progress header */}
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
           {candidateName && (
-            <span className="text-xs font-medium text-muted-foreground">{candidateName}</span>
+            <span className="text-xs text-muted-foreground">{candidateName}</span>
           )}
           <span className="text-xs text-muted-foreground ml-auto">
-            Prueba {currentIndex + 1} de {totalTests}
+            {completedCount} / {totalTests}
           </span>
         </div>
-        <div className="h-0.5 rounded-full overflow-hidden" style={{ background: 'oklch(0.88 0.01 80)' }}>
-          <div
-            className="h-full rounded-full transition-all duration-700 ease-out"
-            style={{ width: `${progressPct}%`, background: 'var(--gold)' }}
-          />
-        </div>
+        <TestProgressPanel
+          tests={testsSnapshot}
+          completedTestIds={completedTestIds}
+          activeTestId={testId}
+        />
       </div>
 
       {/* Test content */}

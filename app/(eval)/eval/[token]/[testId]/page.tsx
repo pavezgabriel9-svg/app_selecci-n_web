@@ -20,27 +20,25 @@ export default async function TestShellPage({ params }: Props) {
   if (!session) notFound()
 
   if (session.status === 'pending') redirect(`/eval/${token}`)
-  if (session.status === 'completed') redirect(`/eval/${token}/gracias`)
+  if (session.status === 'completed') redirect(`/eval/${token}/hub`)
 
   const snapshot = session.tests_snapshot as TestSnapshot[]
 
-  // Determine which test is current by counting completed results
-  const { count } = await supabase
+  // Verify the requested test belongs to this session's snapshot
+  const currentTest = snapshot.find(t => t.id === testId)
+  if (!currentTest) notFound()
+
+  // Fetch which tests have already been completed (free order)
+  const { data: completedResults } = await supabase
     .from('test_results')
-    .select('id', { count: 'exact', head: true })
+    .select('test_id')
     .eq('session_id', session.id)
 
-  const completedCount = count ?? 0
+  const completedTestIds = completedResults?.map(r => r.test_id) ?? []
 
-  if (completedCount >= snapshot.length) {
-    redirect(`/eval/${token}/gracias`)
-  }
-
-  const currentTest = snapshot[completedCount]
-
-  // Anti-skip: if URL testId doesn't match the expected current test, redirect
-  if (testId !== currentTest.id) {
-    redirect(`/eval/${token}/${currentTest.id}`)
+  // If this specific test was already completed, redirect to hub
+  if (completedTestIds.includes(testId)) {
+    redirect(`/eval/${token}/hub`)
   }
 
   // Load candidate name for display
@@ -58,9 +56,10 @@ export default async function TestShellPage({ params }: Props) {
       testName={currentTest.name}
       testPath={currentTest.path}
       hasPractice={currentTest.has_practice}
-      currentIndex={completedCount}
+      completedTestIds={completedTestIds}
       totalTests={snapshot.length}
       candidateName={candidate?.nombre ?? undefined}
+      testsSnapshot={snapshot}
     />
   )
 }

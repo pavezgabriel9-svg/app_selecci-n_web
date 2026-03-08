@@ -10,15 +10,21 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { LogOut } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
+import { getRoleLabel, type UserRole } from '@/lib/auth/roles'
 
-export default function AdminTopbar({ user }: { user: User }) {
+interface Props {
+  user: User
+  role: UserRole
+}
+
+export default function AdminTopbar({ user, role }: Props) {
   const initials = user.email?.slice(0, 2).toUpperCase() ?? 'AD'
+  const roleLabel = getRoleLabel(role)
+  const isSuperAdmin = role === 'super_admin'
 
   return (
     <header className="h-16 border-b border-border/40 px-6 lg:px-8 flex items-center justify-between bg-background/60 backdrop-blur-sm sticky top-0 z-10">
-      <div>
-        {/* Espacio para breadcrumb en el futuro */}
-      </div>
+      <div />
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -38,16 +44,39 @@ export default function AdminTopbar({ user }: { user: User }) {
               <p className="text-xs font-medium leading-none text-foreground">
                 {user.email}
               </p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">
-                Administrador
-              </p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                {isSuperAdmin ? (
+                  <span
+                    className="text-[9px] font-semibold tracking-wider uppercase px-1.5 py-px rounded-sm"
+                    style={{
+                      background: 'oklch(0.72 0.12 68 / 0.15)',
+                      color: 'var(--gold)',
+                    }}
+                  >
+                    Super Admin
+                  </span>
+                ) : (
+                  <p className="text-[10px] text-muted-foreground">{roleLabel}</p>
+                )}
+              </div>
             </div>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-52">
+        <DropdownMenuContent align="end" className="w-56">
           <div className="px-2 py-1.5">
             <p className="text-xs font-medium truncate">{user.email}</p>
-            <p className="text-[10px] text-muted-foreground">Administrador</p>
+            <div className="flex items-center gap-1.5 mt-1">
+              <span
+                className="text-[9px] font-semibold tracking-wider uppercase px-1.5 py-px rounded-sm"
+                style={
+                  isSuperAdmin
+                    ? { background: 'oklch(0.72 0.12 68 / 0.15)', color: 'var(--gold)' }
+                    : { background: 'oklch(0.20 0.06 268 / 0.08)', color: 'var(--navy)' }
+                }
+              >
+                {roleLabel}
+              </span>
+            </div>
           </div>
           <DropdownMenuSeparator />
           <form action={logoutAction}>

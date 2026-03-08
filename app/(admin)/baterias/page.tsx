@@ -4,29 +4,36 @@ import { Plus, FlaskConical, ArrowRight, Users } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { SessionStatus } from '@/types/database'
+import { isSuperAdmin } from '@/lib/auth/roles'
 
 export const metadata: Metadata = { title: 'Baterías' }
 
 interface BatteryWithStats {
   id: string
   name: string
+  admin_id: string
   created_at: string
   battery_tests: { test_id: string }[]
   evaluation_sessions: { id: string; status: SessionStatus }[]
 }
 
-async function getBatteriesWithStats(adminId: string): Promise<BatteryWithStats[]> {
+async function getBatteriesWithStats(adminId: string, superAdmin: boolean): Promise<BatteryWithStats[]> {
   const supabase = await createClient()
-  const { data } = await supabase
+  let query = supabase
     .from('batteries')
     .select(`
-      id, name, created_at,
+      id, name, admin_id, created_at,
       battery_tests(test_id),
       evaluation_sessions(id, status)
     `)
-    .eq('admin_id', adminId)
     .order('created_at', { ascending: false })
 
+  // Super admin ve todas las baterías; admin normal solo las suyas.
+  if (!superAdmin) {
+    query = query.eq('admin_id', adminId)
+  }
+
+  const { data } = await query
   return (data ?? []) as unknown as BatteryWithStats[]
 }
 
@@ -79,7 +86,8 @@ export default async function BateriasPage() {
   } = await supabase.auth.getUser()
   if (!user) return null
 
-  const batteries = await getBatteriesWithStats(user.id)
+  const superAdmin = isSuperAdmin(user)
+  const batteries = await getBatteriesWithStats(user.id, superAdmin)
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
@@ -89,8 +97,8 @@ export default async function BateriasPage() {
           <h1 className="text-4xl font-light text-navy gold-line">Baterías</h1>
           <p className="text-sm text-muted-foreground mt-4">
             {batteries.length === 0
-              ? 'No tienes baterías creadas todavía.'
-              : `${batteries.length} bater${batteries.length === 1 ? 'ía' : 'ías'} · gestiona tus conjuntos de evaluación.`}
+              ? 'No hay baterías creadas todavía.'
+              : `${batteries.length} bater${batteries.length === 1 ? 'ía' : 'ías'}${superAdmin ? ' · visión completa' : ' · gestiona tus conjuntos de evaluación'}.`}
           </p>
         </div>
         <Button asChild style={{ background: 'var(--navy)', color: 'var(--cream)' }}>

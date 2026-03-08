@@ -46,6 +46,7 @@ export async function startEvaluationAction(
 
   const supabase = createServiceClient()
 
+  // Verificar que la sesión existe y tiene tests configurados
   const { data: session } = await supabase
     .from('evaluation_sessions')
     .select('id, status, tests_snapshot')
@@ -53,11 +54,24 @@ export async function startEvaluationAction(
     .single()
 
   if (!session) return { error: 'Esta evaluación no existe o el enlace es inválido' }
-  if (session.status !== 'pending') return { error: 'Esta evaluación ya fue iniciada' }
+  if (session.status === 'completed') return { error: 'Esta evaluación ya fue completada' }
+  if (session.status === 'in_progress') redirect(`/eval/${token}/hub`)
 
   const snapshot = session.tests_snapshot as TestSnapshot[]
   if (!snapshot?.length)
     return { error: 'Esta evaluación no tiene pruebas configuradas' }
+
+  // UPDATE atómico con condición: solo tiene efecto si status sigue siendo 'pending'.
+  // Elimina la race condition entre el SELECT anterior y este UPDATE.
+  const { data: updated } = await supabase
+    .from('evaluation_sessions')
+    .update({ status: 'in_progress', started_at: new Date().toISOString() })
+    .eq('id', session.id)
+    .eq('status', 'pending')
+    .select('id')
+
+  if (!updated?.length)
+    return { error: 'Esta evaluación ya fue iniciada por otra solicitud' }
 
   const { error: candidateError } = await supabase
     .from('candidates')
@@ -66,12 +80,7 @@ export async function startEvaluationAction(
   if (candidateError)
     return { error: 'Error al registrar tus datos. Intenta nuevamente.' }
 
-  await supabase
-    .from('evaluation_sessions')
-    .update({ status: 'in_progress', started_at: new Date().toISOString() })
-    .eq('id', session.id)
-
-  redirect(`/eval/${token}/${snapshot[0].id}`)
+  redirect(`/eval/${token}/hub`)
 }
 
 // ─── Complete Test ────────────────────────────────────────────────────────────
@@ -96,21 +105,21 @@ export async function completeTestAction(
 
   const snapshot = session.tests_snapshot as TestSnapshot[]
 
-  // Determine current position by counting saved results
-  const { count } = await supabase
+  // Verify the submitted test belongs to this session's snapshot
+  const testInSnapshot = snapshot.find(t => t.id === testId)
+  if (!testInSnapshot) {
+    return { redirect: `/eval/${token}/hub` }
+  }
+
+  // Prevent double-submission: check if this test was already saved
+  const { count: existingCount } = await supabase
     .from('test_results')
     .select('id', { count: 'exact', head: true })
     .eq('session_id', sessionId)
+    .eq('test_id', testId)
 
-  const completedCount = count ?? 0
-  const expectedTest = snapshot[completedCount]
-
-  // Anti-skip: if submitted test is not the expected one, redirect correctly
-  if (expectedTest?.id !== testId) {
-    if (completedCount >= snapshot.length) {
-      return { redirect: `/eval/${token}/gracias` }
-    }
-    return { redirect: `/eval/${token}/${expectedTest.id}` }
+  if ((existingCount ?? 0) > 0) {
+    return { redirect: `/eval/${token}/hub` }
   }
 
   // Save result
@@ -120,16 +129,18 @@ export async function completeTestAction(
     results: results as never,
   })
 
-  const nextCount = completedCount + 1
+  // Check if all tests are now completed
+  const { count: totalCompleted } = await supabase
+    .from('test_results')
+    .select('id', { count: 'exact', head: true })
+    .eq('session_id', sessionId)
 
-  if (nextCount >= snapshot.length) {
+  if ((totalCompleted ?? 0) >= snapshot.length) {
     await supabase
       .from('evaluation_sessions')
       .update({ status: 'completed', completed_at: new Date().toISOString() })
       .eq('id', sessionId)
-
-    return { redirect: `/eval/${token}/gracias` }
   }
 
-  return { redirect: `/eval/${token}/${snapshot[nextCount].id}` }
+  return { redirect: `/eval/${token}/hub` }
 }

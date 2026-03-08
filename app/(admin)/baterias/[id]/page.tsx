@@ -7,6 +7,7 @@ import { NuevaEvaluacionButton } from './nueva-evaluacion-button'
 import { DeleteBatteryButton } from './delete-battery-button'
 import { CopyLinkButton } from './copy-link-button'
 import { SessionStatus } from '@/types/database'
+import { isSuperAdmin } from '@/lib/auth/roles'
 
 export const metadata: Metadata = { title: 'Detalle de batería' }
 
@@ -40,18 +41,22 @@ interface BatteryDetail {
 
 // ─── Data fetching ─────────────────────────────────────────────────────────────
 
-async function getBatteryDetail(batteryId: string, adminId: string): Promise<BatteryDetail | null> {
+async function getBatteryDetail(batteryId: string, adminId: string, superAdmin: boolean): Promise<BatteryDetail | null> {
   const supabase = await createClient()
-  const { data } = await supabase
+  let query = supabase
     .from('batteries')
     .select(`
       id, name, created_at,
       battery_tests(position, tests(id, name, has_practice))
     `)
     .eq('id', batteryId)
-    .eq('admin_id', adminId)
-    .single()
 
+  // Super admin puede ver cualquier batería; admin normal solo las suyas.
+  if (!superAdmin) {
+    query = query.eq('admin_id', adminId)
+  }
+
+  const { data } = await query.single()
   if (!data) return null
 
   const result = data as unknown as BatteryDetail
@@ -60,18 +65,22 @@ async function getBatteryDetail(batteryId: string, adminId: string): Promise<Bat
   return result
 }
 
-async function getEvaluations(batteryId: string, adminId: string): Promise<EvaluationSession[]> {
+async function getEvaluations(batteryId: string, adminId: string, superAdmin: boolean): Promise<EvaluationSession[]> {
   const supabase = await createClient()
-  const { data } = await supabase
+  let query = supabase
     .from('evaluation_sessions')
     .select(`
       id, token, status, created_at, started_at, completed_at,
       candidates(nombre, rut)
     `)
     .eq('battery_id', batteryId)
-    .eq('admin_id', adminId)
     .order('created_at', { ascending: false })
 
+  if (!superAdmin) {
+    query = query.eq('admin_id', adminId)
+  }
+
+  const { data } = await query
   return (data ?? []) as unknown as EvaluationSession[]
 }
 
@@ -124,9 +133,10 @@ export default async function BateriaDetailPage({ params }: Props) {
   } = await supabase.auth.getUser()
   if (!user) return null
 
+  const superAdmin = isSuperAdmin(user)
   const [battery, evaluations] = await Promise.all([
-    getBatteryDetail(id, user.id),
-    getEvaluations(id, user.id),
+    getBatteryDetail(id, user.id, superAdmin),
+    getEvaluations(id, user.id, superAdmin),
   ])
 
   if (!battery) notFound()

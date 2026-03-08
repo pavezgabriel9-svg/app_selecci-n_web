@@ -21,8 +21,13 @@ function unwrap<T>(val: T | T[] | null | undefined): T | null {
   return Array.isArray(val) ? val[0] ?? null : val
 }
 
-function exportCSV(sessions: SessionSummary[]) {
-  const header = ['Nombre', 'RUT', 'Batería', 'Fecha completado', 'Tests completados']
+function exportCSV(sessions: SessionSummary[], adminEmails?: Record<string, string>) {
+  const withAttribution = !!adminEmails
+  const header = [
+    'Candidato', 'RUT', 'Batería', 'Fecha completado', 'Tests completados',
+    ...(withAttribution ? ['Creado por'] : []),
+  ]
+
   const rows = sessions.map((s) => {
     const c = unwrap(s.candidates)
     const b = unwrap(s.batteries)
@@ -37,6 +42,7 @@ function exportCSV(sessions: SessionSummary[]) {
       b?.name ?? '',
       formatDate(s.completed_at),
       tests,
+      ...(withAttribution ? [adminEmails?.[s.admin_id] ?? s.admin_id] : []),
     ]
   })
 
@@ -57,10 +63,12 @@ function exportCSV(sessions: SessionSummary[]) {
 
 interface Props {
   sessions: SessionSummary[]
+  adminEmails?: Record<string, string>
 }
 
-export function ResultadosTable({ sessions }: Props) {
+export function ResultadosTable({ sessions, adminEmails }: Props) {
   const [search, setSearch] = useState('')
+  const withAttribution = !!adminEmails
 
   const filtered = useMemo(() => {
     if (!search.trim()) return sessions
@@ -84,6 +92,12 @@ export function ResultadosTable({ sessions }: Props) {
     )
   }
 
+  const tableHeaders = [
+    'Candidato', 'RUT', 'Batería',
+    ...(withAttribution ? ['Creado por'] : []),
+    'Completado', 'Tests', '',
+  ]
+
   return (
     <div className="space-y-4">
       {/* Controls */}
@@ -99,7 +113,7 @@ export function ResultadosTable({ sessions }: Props) {
           />
         </div>
         <button
-          onClick={() => exportCSV(filtered)}
+          onClick={() => exportCSV(filtered, adminEmails)}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium border border-border/50 bg-white hover:bg-muted/30 transition-colors"
           style={{ color: 'var(--navy)' }}
         >
@@ -128,7 +142,7 @@ export function ResultadosTable({ sessions }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ background: 'oklch(0.96 0.005 80)' }}>
-                {['Candidato', 'RUT', 'Batería', 'Completado', 'Tests', ''].map((h) => (
+                {tableHeaders.map((h) => (
                   <th
                     key={h}
                     className="px-4 py-3 text-left text-xs font-medium text-muted-foreground first:pl-5 last:pr-5"
@@ -143,6 +157,7 @@ export function ResultadosTable({ sessions }: Props) {
                 const c = unwrap(session.candidates)
                 const b = unwrap(session.batteries)
                 const testCount = session.test_results.length
+                const creatorEmail = adminEmails?.[session.admin_id]
 
                 return (
                   <tr
@@ -162,6 +177,17 @@ export function ResultadosTable({ sessions }: Props) {
                         <span className="italic opacity-60">Batería eliminada</span>
                       )}
                     </td>
+                    {withAttribution && (
+                      <td className="px-4 py-3.5">
+                        <span
+                          className="text-[11px] px-2 py-0.5 rounded-full"
+                          style={{ background: 'oklch(0.20 0.06 268 / 0.06)', color: 'var(--navy)' }}
+                          title={creatorEmail}
+                        >
+                          {creatorEmail ?? '—'}
+                        </span>
+                      </td>
+                    )}
                     <td className="px-4 py-3.5 text-xs text-muted-foreground tabular-nums whitespace-nowrap">
                       {formatDate(session.completed_at)}
                     </td>
