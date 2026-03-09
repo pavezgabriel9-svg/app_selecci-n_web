@@ -20,7 +20,13 @@ interface Props {
 export default function AdminTopbar({ user, role }: Props) {
   const initials = user.email?.slice(0, 2).toUpperCase() ?? 'AD'
   const roleLabel = getRoleLabel(role)
-  const isSuperAdmin = role === 'super_admin'
+
+  const roleBadgeStyle: React.CSSProperties =
+    role === 'super_admin'
+      ? { background: 'oklch(0.72 0.12 68 / 0.15)', color: 'var(--gold)' }
+      : role === 'admin'
+        ? { background: 'oklch(0.20 0.06 268 / 0.10)', color: 'var(--navy)' }
+        : { background: 'oklch(0.60 0.04 268 / 0.08)', color: 'oklch(0.45 0.05 268)' }
 
   return (
     <header className="h-16 border-b border-border/40 px-6 lg:px-8 flex items-center justify-between bg-background/60 backdrop-blur-sm sticky top-0 z-10">
@@ -45,19 +51,12 @@ export default function AdminTopbar({ user, role }: Props) {
                 {user.email}
               </p>
               <div className="flex items-center gap-1.5 mt-0.5">
-                {isSuperAdmin ? (
-                  <span
-                    className="text-[9px] font-semibold tracking-wider uppercase px-1.5 py-px rounded-sm"
-                    style={{
-                      background: 'oklch(0.72 0.12 68 / 0.15)',
-                      color: 'var(--gold)',
-                    }}
-                  >
-                    Super Admin
-                  </span>
-                ) : (
-                  <p className="text-[10px] text-muted-foreground">{roleLabel}</p>
-                )}
+                <span
+                  className="text-[9px] font-semibold tracking-wider uppercase px-1.5 py-px rounded-sm"
+                  style={roleBadgeStyle}
+                >
+                  {roleLabel}
+                </span>
               </div>
             </div>
           </Button>
@@ -68,11 +67,7 @@ export default function AdminTopbar({ user, role }: Props) {
             <div className="flex items-center gap-1.5 mt-1">
               <span
                 className="text-[9px] font-semibold tracking-wider uppercase px-1.5 py-px rounded-sm"
-                style={
-                  isSuperAdmin
-                    ? { background: 'oklch(0.72 0.12 68 / 0.15)', color: 'var(--gold)' }
-                    : { background: 'oklch(0.20 0.06 268 / 0.08)', color: 'var(--navy)' }
-                }
+                style={roleBadgeStyle}
               >
                 {roleLabel}
               </span>

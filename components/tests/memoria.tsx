@@ -238,21 +238,11 @@ export default function MemoriaTest({ onComplete, isPending, hasPractice }: Test
       <div className="space-y-8">
         <div className="space-y-4">
           <h2 className="text-2xl font-light" style={{ color: 'var(--navy)', fontFamily: 'var(--font-fraunces, serif)' }}>
-            Prueba completada
+            ¡Bien hecho!
           </h2>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { label: 'Intentos',  value: r.intentos },
-              { label: 'Tiempo',    value: `${r.tiempo}s` },
-              { label: 'Errores',   value: r.erroresRepetidos },
-            ].map(({ label, value }) => (
-              <div key={label} className="text-center py-5 rounded-xl" style={{ background: 'oklch(0.96 0.005 80)' }}>
-                <div className="text-2xl font-light" style={{ color: 'var(--navy)' }}>{value}</div>
-                <div className="text-xs text-muted-foreground mt-1">{label}</div>
-              </div>
-            ))}
-          </div>
-          <p className="text-sm text-muted-foreground">{r.rendimiento}</p>
+          <p className="text-sm text-muted-foreground">
+            Has completado esta etapa de la evaluación.
+          </p>
         </div>
         <button onClick={() => onComplete(r)} disabled={isPending}
           className="inline-flex items-center gap-2 px-8 py-3 rounded-lg text-sm font-medium disabled:opacity-60"

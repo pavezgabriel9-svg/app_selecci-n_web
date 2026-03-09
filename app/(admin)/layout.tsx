@@ -20,7 +20,7 @@ export default async function AdminLayout({
 
   return (
     <div className="min-h-screen flex bg-admin-gradient">
-      <AdminSidebar isSuperAdmin={role === 'super_admin'} />
+      <AdminSidebar role={role} />
       <div className="flex-1 flex flex-col min-w-0">
         <AdminTopbar user={user} role={role} />
         <main className="flex-1 p-6 lg:p-8 overflow-auto">

@@ -4,7 +4,7 @@ import { Plus, FlaskConical, ArrowRight, Users } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { SessionStatus } from '@/types/database'
-import { isSuperAdmin } from '@/lib/auth/roles'
+import { isAdminOrAbove } from '@/lib/auth/roles'
 
 export const metadata: Metadata = { title: 'Baterías' }
 
@@ -86,7 +86,7 @@ export default async function BateriasPage() {
   } = await supabase.auth.getUser()
   if (!user) return null
 
-  const superAdmin = isSuperAdmin(user)
+  const superAdmin = isAdminOrAbove(user)
   const batteries = await getBatteriesWithStats(user.id, superAdmin)
 
   return (

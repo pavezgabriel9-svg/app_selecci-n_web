@@ -51,10 +51,10 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // /usuarios requiere rol super_admin
+  // /usuarios requiere rol admin o superior
   if (pathname.startsWith('/usuarios')) {
     const role = user?.app_metadata?.role
-    if (role !== 'super_admin') {
+    if (role !== 'admin' && role !== 'super_admin') {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
   }

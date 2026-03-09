@@ -3,11 +3,17 @@
 import { useActionState } from 'react'
 import { createAdminAction } from './actions'
 import type { CreateAdminState } from './actions'
+import type { UserRole } from '@/lib/auth/roles'
 
 const initialState: CreateAdminState = null
 
-export function CreateAdminForm() {
+interface Props {
+  actorRole: UserRole
+}
+
+export function CreateAdminForm({ actorRole }: Props) {
   const [state, action, isPending] = useActionState(createAdminAction, initialState)
+  const canCreateAdmin = actorRole === 'super_admin'
 
   return (
     <form action={action} className="space-y-4">
@@ -20,7 +26,7 @@ export function CreateAdminForm() {
           name="email"
           type="email"
           required
-          placeholder="admin@empresa.com"
+          placeholder="usuario@empresa.com"
           className="w-full px-3 py-2 text-sm rounded-lg border border-border/50 bg-background focus:outline-none focus:ring-2 focus:ring-accent/30 transition-shadow"
         />
       </div>
@@ -40,6 +46,23 @@ export function CreateAdminForm() {
         <p className="text-[10px] text-muted-foreground leading-relaxed">
           Mínimo 8 caracteres · al menos 1 mayúscula · al menos 1 número
         </p>
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-foreground/70" htmlFor="role">
+          Rol
+        </label>
+        <select
+          id="role"
+          name="role"
+          defaultValue="user"
+          className="w-full px-3 py-2 text-sm rounded-lg border border-border/50 bg-background focus:outline-none focus:ring-2 focus:ring-accent/30 transition-shadow"
+        >
+          <option value="user">User — acceso a sus propias baterías</option>
+          {canCreateAdmin && (
+            <option value="admin">Admin — acceso a todas las baterías</option>
+          )}
+        </select>
       </div>
 
       {state && 'error' in state && (
@@ -63,7 +86,7 @@ export function CreateAdminForm() {
         className="w-full py-2 px-4 rounded-lg text-sm font-medium transition-opacity disabled:opacity-50"
         style={{ background: 'var(--navy)', color: 'var(--cream)' }}
       >
-        {isPending ? 'Creando...' : 'Crear admin'}
+        {isPending ? 'Creando...' : 'Crear usuario'}
       </button>
     </form>
   )
