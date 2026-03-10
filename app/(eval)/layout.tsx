@@ -12,9 +12,7 @@ export default function EvalLayout({ children }: { children: ReactNode }) {
         </div>
       </header>
       <main className="px-6 py-16">
-        <div className="max-w-xl mx-auto">
-          {children}
-        </div>
+        {children}
       </main>
     </div>
   )

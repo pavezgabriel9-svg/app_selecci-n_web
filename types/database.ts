@@ -237,6 +237,18 @@ export interface ICResult {
   nivelRendimiento: string
 }
 
+export interface ICResultMetadata {
+  preparation_time: number
+  total_viewing_time: number
+  tab_switch_count: number
+  out_of_focus_duration: number
+}
+
+export interface ICResultV2 {
+  respuestas: ICResult
+  metadata: ICResultMetadata
+}
+
 export interface MemoriaResult {
   intentos: number
   tiempo: number
@@ -262,6 +274,7 @@ export interface LuscherResult {
 export type TestResultData =
   | HanoiResult
   | ICResult
+  | ICResultV2
   | MemoriaResult
   | StroopResult
   | LuscherResult

@@ -6,6 +6,7 @@ import { ChevronRight } from 'lucide-react'
 import type {
   HanoiResult,
   ICResult,
+  ICResultV2,
   MemoriaResult,
   StroopResult,
   LuscherResult,
@@ -70,6 +71,9 @@ function isHanoi(r: TestResultData): r is HanoiResult {
 function isIC(r: TestResultData): r is ICResult {
   return typeof r === 'object' && r !== null && 'puntaje' in r && 'incorrectas' in r
 }
+function isICv2(r: TestResultData): r is ICResultV2 {
+  return typeof r === 'object' && r !== null && 'respuestas' in r && 'metadata' in r
+}
 function isMemoria(r: TestResultData): r is MemoriaResult {
   return typeof r === 'object' && r !== null && 'intentos' in r && 'erroresRepetidos' in r
 }
@@ -115,6 +119,35 @@ function ResultCard({ result }: { result: TestResultData }) {
           <Stat label="Movimientos" value={result.movimientos} />
           <Stat label="Faltas" value={result.faltas} />
           <Stat label="Tiempo (s)" value={result.tiempoTotal} />
+        </div>
+      </div>
+    )
+  }
+
+  if (isICv2(result)) {
+    const r = result.respuestas
+    const m = result.metadata
+    return (
+      <div className="space-y-4">
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">{r.nivelRendimiento}</p>
+          <div className="grid grid-cols-4 gap-3">
+            <Stat label="Correctas" value={r.puntaje} />
+            <Stat label="Incorrectas" value={r.incorrectas} />
+            <Stat label="Omisiones" value={r.omisiones} />
+            <Stat label="Ajustado" value={r.puntuacionAjustada} />
+          </div>
+        </div>
+        <div className="space-y-3">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+            Monitoreo de integridad
+          </p>
+          <div className="grid grid-cols-4 gap-3">
+            <Stat label="T. preparación" value={`${m.preparation_time}s`} />
+            <Stat label="T. total" value={`${m.total_viewing_time}s`} />
+            <Stat label="Cambios pestaña" value={m.tab_switch_count} />
+            <Stat label="Fuera de foco" value={`${m.out_of_focus_duration}s`} />
+          </div>
         </div>
       </div>
     )

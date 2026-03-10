@@ -190,53 +190,67 @@ export function TestRunner({
   const { completeTest, isPending } = useTestNavigation(sessionId, testId, token)
   const completedCount = completedTestIds.length
 
+  // IC provee su propio contenedor wide; el resto usa la card estrecha estándar
+  const isICTest = testPath.toLowerCase().includes('ic')
+  const testContent = resolveTestComponent(
+    testPath, hasPractice,
+    { onComplete: completeTest, isPending },
+    testName, candidateName,
+  )
+
   return (
     <div className="space-y-6">
-      {/* Breadcrumb */}
-      <Link
-        href={`/eval/${token}/hub`}
-        className="inline-flex items-center gap-1.5 transition-colors duration-200"
-        style={{ color: 'oklch(0.62 0.005 80)' }}
-        onMouseEnter={e => (e.currentTarget.style.color = 'var(--navy)')}
-        onMouseLeave={e => (e.currentTarget.style.color = 'oklch(0.62 0.005 80)')}
-      >
-        <svg
-          className="w-3 h-3"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-          aria-hidden="true"
+      {/* Breadcrumb + progreso — siempre estrecho y centrado */}
+      <div className="max-w-xl mx-auto space-y-6">
+        <Link
+          href={`/eval/${token}/hub`}
+          className="inline-flex items-center gap-1.5 transition-colors duration-200"
+          style={{ color: 'oklch(0.62 0.005 80)' }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--navy)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'oklch(0.62 0.005 80)')}
         >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-        </svg>
-        <span className="text-[11px]">Menú de evaluaciones</span>
-      </Link>
+          <svg
+            className="w-3 h-3"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+            aria-hidden="true"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+          </svg>
+          <span className="text-[11px]">Menú de evaluaciones</span>
+        </Link>
 
-      {/* Progress header */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          {candidateName && (
-            <span className="text-xs text-muted-foreground">{candidateName}</span>
-          )}
-          <span className="text-xs text-muted-foreground ml-auto">
-            {completedCount} / {totalTests}
-          </span>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            {candidateName && (
+              <span className="text-xs text-muted-foreground">{candidateName}</span>
+            )}
+            <span className="text-xs text-muted-foreground ml-auto">
+              {completedCount} / {totalTests}
+            </span>
+          </div>
+          <TestProgressPanel
+            tests={testsSnapshot}
+            completedTestIds={completedTestIds}
+            activeTestId={testId}
+          />
         </div>
-        <TestProgressPanel
-          tests={testsSnapshot}
-          completedTestIds={completedTestIds}
-          activeTestId={testId}
-        />
       </div>
 
       {/* Test content */}
-      <div
-        className="rounded-2xl border p-8"
-        style={{ background: 'white', borderColor: 'oklch(0.92 0.005 80)' }}
-      >
-        {resolveTestComponent(testPath, hasPractice, { onComplete: completeTest, isPending }, testName, candidateName)}
-      </div>
+      {isICTest ? (
+        // IC maneja su propio layout wide (max-w-6xl card)
+        testContent
+      ) : (
+        <div
+          className="max-w-xl mx-auto rounded-2xl border p-8"
+          style={{ background: 'white', borderColor: 'oklch(0.92 0.005 80)' }}
+        >
+          {testContent}
+        </div>
+      )}
     </div>
   )
 }

@@ -68,7 +68,7 @@ export default async function HubPage({ params }: Props) {
   const progressPct = Math.round((completedCount / snapshot.length) * 100)
 
   return (
-    <div className="space-y-10">
+    <div className="max-w-xl mx-auto space-y-10">
       {/* Header */}
       <div className="space-y-5">
         <div className="space-y-1.5">
