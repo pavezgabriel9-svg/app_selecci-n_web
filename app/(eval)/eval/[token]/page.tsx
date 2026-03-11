@@ -33,7 +33,11 @@ export default async function EvalIntakePage({ params }: Props) {
 
   const snapshot = session.tests_snapshot as TestSnapshot[]
 
-  return <IntakeForm token={token} totalTests={snapshot.length} />
+  return (
+    <div className="max-w-xl mx-auto">
+      <IntakeForm token={token} totalTests={snapshot.length} />
+    </div>
+  )
 }
 
 // ─── Local helpers ─────────────────────────────────────────────────────────────
@@ -51,7 +55,7 @@ function EvalMessage({
 }) {
   const isSuccess = variant === 'success'
   return (
-    <div className="text-center space-y-5 py-16">
+    <div className="max-w-xl mx-auto text-center space-y-5 py-16">
       <div
         className="w-12 h-12 rounded-full flex items-center justify-center mx-auto text-lg"
         style={{

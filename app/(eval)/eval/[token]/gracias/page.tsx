@@ -29,7 +29,7 @@ export default async function GraciasPage({ params }: Props) {
   const firstName = candidate?.nombre?.split(' ')[0]
 
   return (
-    <div className="text-center space-y-10 py-12">
+    <div className="max-w-xl mx-auto text-center space-y-10 py-12">
       {/* Icon */}
       <div
         className="w-16 h-16 rounded-full mx-auto flex items-center justify-center"
